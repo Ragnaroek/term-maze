@@ -1,0 +1,7 @@
+[package]
+name = "termmaze"
+version = "0.0.1"
+authors = ["Michael Bohn <spaceodyssey@gmx.de>"]
+
+[dependencies.maze]
+path = "/Users/mb/pprojects/libmaze"
