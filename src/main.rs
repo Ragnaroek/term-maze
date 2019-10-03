@@ -21,12 +21,19 @@ fn main() {
     print!("\x1B[2J");//clear
     print!("\x1B[1;1H");
 
+    //top-row
     for x in 0..maze.width {
-        if maze.wall(WallDirection::NORTH, x, 0) {
-            print!("\u{2533}\u{2501}\u{2501}");
-        } else {
-            print!("\u{2533}  ");
+        if x == 0 {
+            print!("┏");
         }
+
+        let right_edge;
+        if x == maze.width-1 {
+            right_edge = '┓';
+        } else {
+            right_edge = if maze.wall(WallDirection::EAST, x, 0) {'┳'} else {'━'};
+        }
+        print!("━━{}", right_edge);
     }
     println!("");
 
