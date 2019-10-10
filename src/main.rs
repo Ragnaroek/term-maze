@@ -1,10 +1,15 @@
 extern crate maze;
+extern crate termion;
 
 use maze::square_maze::{SquareMaze, WallDirection};
 use maze::gen;
 use maze::meta::{to_hex_string, MetaData};
-use std::{thread, time, env};
+use std::{thread, time, env, io};
 use std::collections::{HashMap};
+use std::io::{Read, Write};
+
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
 
 //                                  |
 //                                  1
@@ -48,6 +53,12 @@ fn init_edge_map() -> HashMap<EdgePattern, char> {
     map
 }
 
+#[derive(Debug)]
+struct GameState {
+    player_x: usize,
+    player_y: usize,
+}
+
 fn main() {
 
     let lines_str = env::var("LINES");
@@ -55,7 +66,7 @@ fn main() {
 
     let height : usize = lines_str.expect("lines").parse().expect("invalid line number");
     let width : usize = columns_str.expect("columns").parse().expect("invalid column number");
-    let mut maze = SquareMaze::new_filled((width-1)/3, (height-1)/2);
+    let mut maze = SquareMaze::new_filled((width-2)/3, (height-1)/2);
     let seed = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
     let mut meta = MetaData::new_empty();
     meta.seed = to_hex_string(seed).to_string();
@@ -63,8 +74,13 @@ fn main() {
 
 
     let edge_map = init_edge_map();
+    let mut game_state = GameState{
+        player_x: 0,
+        player_y: 0,
+    };
 
     print!("\x1B[2J");//clear
+    print!("\x1B[?25l");
     print!("\x1B[1;1H");
 
     //top-row
@@ -90,7 +106,9 @@ fn main() {
             } else {
                 print!("   ")
             }
-            if x == maze.width-1 {
+            if x == maze.width-1 && y == maze.height-1 {
+                print!("🚪");
+            } else if x == maze.width-1 {
                 print!("┃");
             }
         }
@@ -102,12 +120,13 @@ fn main() {
                 } else {
                     print!("┃");
                 }
-
             } else if x == 0 && y == maze.height -1 {
                 print!("┗")
             }
 
-            if y == maze.height - 1 {
+            if y == maze.height - 1 && x == maze.width - 1 {
+                print!("━━┛");
+            } else if y == maze.height - 1 {
                 if maze.wall(WallDirection::EAST, x, y) {
                     print!("━━┻")
                 } else {
@@ -145,7 +164,46 @@ fn main() {
     print!("\x1B[2;2H");
     println!("\u{1F642}");
 
-    //println!("\x1B[10A");//move
+    let mut stdout = io::stdout().into_raw_mode().unwrap();
+    let mut stdin = termion::async_stdin().keys();
+    loop {
+            let input = stdin.next();
+            if let Some(Ok(key)) = input {
+                match key {
+                    // Exit if 'q' is pressed
+                    termion::event::Key::Char('q') => break,
+                    _ => update_player_pos(key, &maze, &mut game_state)
+                }
+            }
+            thread::sleep(time::Duration::from_millis(50));
+        }
+}
 
-    thread::sleep(time::Duration::from_secs(300));
+fn update_player_pos(key: termion::event::Key, maze: &SquareMaze, state: &mut GameState) {
+    let old_x = state.player_x;
+    let old_y = state.player_y;
+    if key == termion::event::Key::Left {
+        if !maze.wall(WallDirection::WEST, state.player_x, state.player_y) && state.player_x >= 1 {
+            state.player_x -= 1;
+        }
+    } else if key == termion::event::Key::Right {
+        if !maze.wall(WallDirection::EAST, state.player_x, state.player_y) {
+            state.player_x += 1;
+        }
+    } else if key == termion::event::Key::Up {
+        if !maze.wall(WallDirection::NORTH, state.player_x, state.player_y) && state.player_y >= 1 {
+            state.player_y -= 1;
+        }
+    }  else if key == termion::event::Key::Down {
+        if !maze.wall(WallDirection::SOUTH, state.player_x, state.player_y) {
+            state.player_y += 1;
+        }
+    }
+
+    if state.player_x != old_x || state.player_y != old_y {
+        print!("\x1B[{};{}H", 2+old_y*2, 2+old_x *3);
+        println!(" ");
+        print!("\x1B[{};{}H", 2+state.player_y*2, 2+state.player_x *3);
+        println!("\u{1F642}");
+    }
 }

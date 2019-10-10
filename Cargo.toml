@@ -3,5 +3,8 @@ name = "termmaze"
 version = "0.0.1"
 authors = ["Michael Bohn <spaceodyssey@gmx.de>"]
 
+[dependencies]
+termion = "1.5.3"
+
 [dependencies.maze]
 path = "/Users/mb/pprojects/libmaze"
