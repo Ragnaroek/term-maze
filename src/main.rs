@@ -58,8 +58,6 @@ struct GameState {
     player_y: usize,
 }
 
-const SIMPLE_RENDER:bool = true;
-
 fn main() {
 
     let lines_str = env::var("LINES");
@@ -83,37 +81,7 @@ fn main() {
     print!("\x1B[?25l");
     print!("\x1B[1;1H");
 
-    if SIMPLE_RENDER {
-
-        for y in (0..maze.height).rev() {
-            for x in 0..maze.width {
-                print!("╋");
-                if maze.wall(WallDirection::NORTH, x, y) {
-                    print!("━━");
-                } else {
-                    print!("  ");
-                }
-            }
-            println!("");
-
-            for x in 0..maze.width {
-                if maze.wall(WallDirection::WEST, x, y) {
-                    print!("┃");
-                } else {
-                    print!(" ");
-                }
-                print!("  ")
-            }
-            println!("");
-        }
-
-        for _ in 0..maze.width {
-            print!("╋━━");
-        }
-
-    } else {
-
-    //top-row
+    //top row
     for x in 0..maze.width {
         if x == 0 {
             print!("┏");
@@ -123,13 +91,13 @@ fn main() {
         if x == maze.width-1 {
             right_edge = '┓';
         } else {
-            right_edge = if maze.wall(WallDirection::EAST, x, 0) {'┳'} else {'━'};
+            right_edge = if maze.wall(WallDirection::EAST, x, maze.height-1) {'┳'} else {'━'};
         }
         print!("━━{}", right_edge);
     }
     println!("");
 
-    for y in 0..maze.height {
+    for y in (0..maze.height).rev() {
         for x in 0..maze.width {
             if maze.wall(WallDirection::WEST, x, y) {
                 print!("┃  ");
@@ -143,20 +111,21 @@ fn main() {
             }
         }
         println!("");
+
         for x in 0..maze.width {
-            if x == 0 && y < (maze.height - 1) {
-                if maze.wall(WallDirection::SOUTH, x, y) {
+            if x == 0 {
+                if y == 0 {
+                    print!("┗");
+                } else if maze.wall(WallDirection::SOUTH, x, y) {
                     print!("┣");
                 } else {
                     print!("┃");
                 }
-            } else if x == 0 && y == maze.height -1 {
-                print!("┗")
             }
 
-            if y == maze.height - 1 && x == maze.width - 1 {
+            if y == 0 && x == maze.width - 1 {
                 print!("━━┛");
-            } else if y == maze.height - 1 {
+            } else if y == 0 {
                 if maze.wall(WallDirection::EAST, x, y) {
                     print!("━━┻")
                 } else {
@@ -174,7 +143,7 @@ fn main() {
                     let edge_pattern = EdgePattern::new(
                         maze.wall(WallDirection::EAST, x, y),
                         maze.wall(WallDirection::SOUTH, x, y),
-                        maze.wall(WallDirection::EAST, x, y+1),
+                        maze.wall(WallDirection::EAST, x, y-1),
                         maze.wall(WallDirection::SOUTH, x+1, y)
                     );
 
@@ -190,13 +159,12 @@ fn main() {
         }
         println!("");
     }
-    }
 
     let (start_x, start_y) = maze_pos(maze.entry.x, maze.entry.y, maze.height);
     print!("\x1B[{};{}H", start_y, start_x);
     println!("\u{1F642}");
 
-    let _ = io::stdout().into_raw_mode().unwrap();
+    let mut stdout = io::stdout().into_raw_mode().unwrap();
     let mut stdin = termion::async_stdin().keys();
     loop {
             let input = stdin.next();
