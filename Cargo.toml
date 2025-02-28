@@ -1,10 +1,11 @@
 [package]
 name = "termmaze"
 version = "0.0.1"
+edition = "2024"
 authors = ["Michael Bohn <spaceodyssey@gmx.de>"]
 
 [dependencies]
-termion = "1.5.3"
+termion = "4.0.4"
 
 [dependencies.maze]
-path = "/Users/mb/pprojects/libmaze"
+path = "../libmaze"
